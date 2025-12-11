@@ -1,0 +1,179 @@
+/* MOBILE-FIRST STYLE — FULLT OMSKRIVEN */
+
+body {
+  margin: 0;
+  padding: 12px;
+  font-family: 'Fredoka One', cursive;
+  background: linear-gradient(#cce6ff, #b8e0c2);
+  text-align: center;
+  overflow-x: hidden;
+}
+
+/* --- Bakgrundsblobs (mobil-anpassade) --- */
+.background-blobs::before,
+.background-blobs::after {
+  content: '';
+  position: fixed;
+  background: rgba(255,255,255,0.45);
+  filter: blur(22px);
+  border-radius: 40px;
+  z-index: -1;
+}
+.background-blobs::before {
+  width: 100px;
+  height: 40px;
+  top: 60px;
+  left: 20px;
+}
+.background-blobs::after {
+  width: 80px;
+  height: 30px;
+  top: 110px;
+  right: 20px;
+}
+
+/* --- Header --- */
+.header .logo {
+  width: 65px;
+}
+
+
+.title {
+  font-size: 32px;
+  margin: 5px 0 0 0;
+  font-weight: 700;
+  color: #2fa34e;
+}
+.subtitle {
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+/* --- Poängruta (mobil först) --- */
+.score-card {
+  margin: 20px auto;
+  background: #ffffffdd;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  max-width: 330px;
+  border-radius: 18px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+  font-weight: bold;
+}
+.score-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+.score-card h2 {
+  margin: 3px 0 0;
+  font-size: 22px;
+}
+.divider {
+  width: 2px;
+  height: 30px;
+  background: #ddd;
+}
+
+/* --- Spelcontainer mobil --- */
+#gameContainer {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+}
+
+#gameCanvas {
+  width: 100%;
+  height: auto;
+  background:
+    linear-gradient(#99d38c 1px, transparent 1px),
+    linear-gradient(90deg, #a8dca0 1px, transparent 1px);
+  background-size: 20px 20px;
+  border-radius: 20px;
+  border: 5px solid #2d8540;
+  box-shadow: 0 6px 0 #1d5f2c;
+}
+
+
+/* --- UI Overlay --- */
+.ui-overlay {
+  position: absolute;
+  inset: 0;
+  background: #ffffffd8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+}
+.hidden {
+  display: none;
+}
+
+.ui-box {
+  background: white;
+  padding: 22px;
+  width: 90%;
+  max-width: 330px;
+  border-radius: 20px;
+  box-shadow: 0 8px 14px rgba(0,0,0,0.12);
+}
+.snake{
+    width: 120px;
+    height: auto;
+    margin-bottom: -30px;
+}
+
+/* --- Knappar mobil --- */
+.btn {
+  font-size: 18px;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  color: white;
+  margin-top: 20px;
+  width: 100%;
+}
+.green {
+  background: #28a745;
+}
+.red {
+  background: #d9534f;
+}
+
+/* --- Footer-pill mobil --- */
+.footer-pill {
+  background: #fff6dd;
+  padding: 10px 20px;
+  width: fit-content;
+  border-radius: 18px;
+  margin: 30px auto;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  font-size: 14px;
+}
+
+/* --- MEDIA QUERIES för större skärmar --- */
+@media (min-width: 768px) {
+  .title {
+    font-size: 42px;
+  }
+  .subtitle {
+    font-size: 16px;
+  }
+  .score-card {
+    padding: 15px 40px;
+    max-width: 450px;
+  }
+  .score-card h2 {
+    font-size: 28px;
+  }
+  .ui-box {
+    padding: 30px;
+    max-width: 360px;
+  }
+}
