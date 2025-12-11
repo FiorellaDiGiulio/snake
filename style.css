@@ -9,6 +9,11 @@ body {
   overflow-x: hidden;
 }
 
+body {
+  overflow: hidden;
+}
+
+
 /* --- Bakgrundsblobs (mobil-anpassade) --- */
 .background-blobs::before,
 .background-blobs::after {

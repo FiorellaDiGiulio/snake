@@ -174,3 +174,15 @@ canvas.addEventListener("touchend", (e) => {
     }
   }
 });
+
+// Stoppa scroll vid piltangenter och space
+window.addEventListener("keydown", (e) => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// Stoppa mobil-scroll när man drar fingret på canvas
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
