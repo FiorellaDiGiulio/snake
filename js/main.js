@@ -135,3 +135,42 @@ function drawGrid() {
 //--------------------------------------------------
 startBtn.addEventListener("click", startGame);
 restartBtn.addEventListener("click", startGame);
+
+
+// MOBIL KONTROLLER
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault(); // stoppa scroll
+}, { passive: false });
+
+canvas.addEventListener("touchend", (e) => {
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+
+  // Om rörelsen är större horisontellt
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 0 && snake.direction.x !== -1) {
+      snake.direction = { x: 1, y: 0 }; // höger
+    }
+    if (dx < 0 && snake.direction.x !== 1) {
+      snake.direction = { x: -1, y: 0 }; // vänster
+    }
+  } else {
+    if (dy > 0 && snake.direction.y !== -1) {
+      snake.direction = { x: 0, y: 1 }; // ner
+    }
+    if (dy < 0 && snake.direction.y !== 1) {
+      snake.direction = { x: 0, y: -1 }; // upp
+    }
+  }
+});
