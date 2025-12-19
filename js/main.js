@@ -8,9 +8,6 @@ import { Scoreboard } from "./scoreboard.js";
 ================================ */
 const api = new mpapi("wss://mpapi.se/net", "hungrig-orm");
 
-/* ===============================
-   GLOBAL STATE
-================================ */
 let isMultiplayer = false;
 let isHost = false;
 let myId = null;
@@ -29,7 +26,7 @@ canvas.width = CELL * 40;
 canvas.height = CELL * 25;
 
 /* ===============================
-   UI ELEMENTS
+   UI
 ================================ */
 const uiOverlay = document.getElementById("uiOverlay");
 const startScreen = document.getElementById("startScreen");
@@ -49,28 +46,12 @@ const scoreboard = new Scoreboard(
 );
 
 /* ===============================
-   GAME DATA
+   GAME STATE
 ================================ */
-let snakes = {};
+let snakes = {};     // id -> Snake
 let food = null;
-let inputs = {};
+let inputs = {};    // clientId -> direction
 let lastTick = 0;
-
-/* ===============================
-   RESET MULTIPLAYER (🔥 VIKTIG)
-================================ */
-function resetMultiplayer() {
-  try {
-    api.leave();
-  } catch {}
-  isMultiplayer = false;
-  isHost = false;
-  myId = null;
-  gameStarted = false;
-  snakes = {};
-  inputs = {};
-  scoreboard.reset();
-}
 
 /* ===============================
    SINGLEPLAYER
@@ -78,7 +59,14 @@ function resetMultiplayer() {
 function startSingleplayer() {
   resetMultiplayer();
 
+  isMultiplayer = false;
+  isHost = false;
   myId = "local";
+  gameStarted = true;
+
+  snakes = {};
+  scoreboard.reset();
+
   snakes[myId] = new Snake(canvas);
   food = new Food(canvas, snakes[myId]);
 
@@ -87,7 +75,6 @@ function startSingleplayer() {
 
   hideUI();
   lastTick = 0;
-  gameStarted = true;
   requestAnimationFrame(gameLoop);
 }
 
@@ -95,16 +82,21 @@ function startSingleplayer() {
    HOST MULTIPLAYER
 ================================ */
 async function startHost() {
-  resetMultiplayer();
-
   try {
+    resetMultiplayer();
+
     isMultiplayer = true;
     isHost = true;
+    gameStarted = false;
 
     const { session, clientId } = await api.host();
     myId = clientId;
 
-    alert("Session code: " + session);
+    alert("Session ID: " + session);
+
+    snakes = {};
+    inputs = {};
+    scoreboard.reset();
 
     snakes[myId] = new Snake(canvas);
     food = new Food(canvas, snakes[myId]);
@@ -113,10 +105,8 @@ async function startHost() {
     scoreboard.render(myId);
 
     listenMultiplayer();
-
     hideUI();
-    gameStarted = true;
-    requestAnimationFrame(gameLoop);
+
   } catch (e) {
     alert("Kunde inte hosta: " + e);
   }
@@ -126,26 +116,42 @@ async function startHost() {
    JOIN MULTIPLAYER
 ================================ */
 async function joinMultiplayer() {
-  resetMultiplayer();
-
   const code = joinCodeInput.value.trim();
   if (!code) return alert("Skriv in sessionkod");
 
   try {
+    resetMultiplayer();
+
     isMultiplayer = true;
     isHost = false;
+    gameStarted = false;
 
     const res = await api.join(code);
     myId = res.clientId;
 
-    scoreboard.ensurePlayer(myId);
-    scoreboard.render(myId);
-
     listenMultiplayer();
     hideUI();
+
   } catch (e) {
     alert("Kunde inte ansluta: " + e);
   }
+}
+
+/* ===============================
+   RESET MULTIPLAYER
+================================ */
+function resetMultiplayer() {
+  try {
+    api.leave();
+  } catch {}
+
+  isMultiplayer = false;
+  isHost = false;
+  gameStarted = false;
+  snakes = {};
+  inputs = {};
+  food = null;
+  scoreboard.reset();
 }
 
 /* ===============================
@@ -154,46 +160,50 @@ async function joinMultiplayer() {
 function listenMultiplayer() {
   api.listen((event, _, clientId, data) => {
 
-    // 🔹 Ny spelare
-    if (event === "joined") {
+    /* ===== HOST: ny spelare ===== */
+    if (isHost && event === "joined") {
       if (!snakes[clientId]) {
         snakes[clientId] = new Snake(canvas);
         scoreboard.ensurePlayer(clientId);
         scoreboard.render(myId);
+
+        // starta spelet när minst 2 spelare
+        if (Object.keys(snakes).length >= 2 && !gameStarted) {
+          gameStarted = true;
+          lastTick = 0;
+          requestAnimationFrame(gameLoop);
+        }
       }
     }
 
-    // 🔹 Speldata
-    if (event === "game") {
+    /* ===== HOST: ta emot input ===== */
+    if (isHost && event === "game" && data.input) {
+      inputs[clientId] = data.input;
+    }
 
-      // INPUT → endast host tar emot
-      if (isHost && data.input) {
-        inputs[clientId] = data.input;
-        return;
+    /* ===== CLIENT: ta emot state ===== */
+    if (!isHost && event === "game" && data.type === "state") {
+
+      snakes = {};
+      Object.entries(data.snakes).forEach(([id, s]) => {
+        const snake = new Snake(canvas);
+        snake.body = s.body;
+        snake.direction = s.direction;
+        snakes[id] = snake;
+      });
+
+      if (!food && snakes[myId]) {
+        food = new Food(canvas, snakes[myId]);
       }
+      food.position = data.food;
 
-      // STATE → endast klienter tar emot
-      if (!isHost && data.snakes) {
-        snakes = {};
-        for (const id in data.snakes) {
-          const s = new Snake(canvas);
-          s.body = data.snakes[id].body;
-          s.direction = data.snakes[id].direction;
-          snakes[id] = s;
-          scoreboard.ensurePlayer(id);
-        }
+      scoreboard.scores = data.scores || {};
+      scoreboard.render(myId);
 
-        if (!food && snakes[myId]) {
-          food = new Food(canvas, snakes[myId]);
-        }
-        food.position = data.food;
-
-        scoreboard.render(myId);
-
-        if (!gameStarted) {
-          gameStarted = true;
-          requestAnimationFrame(gameLoop);
-        }
+      if (!gameStarted) {
+        gameStarted = true;
+        lastTick = 0;
+        requestAnimationFrame(gameLoop);
       }
     }
   });
@@ -215,19 +225,16 @@ function gameLoop(ts) {
 }
 
 /* ===============================
-   UPDATE
+   UPDATE (HOST ONLY)
 ================================ */
 function updateGame() {
-  if (!isHost) return;
+  if (!isHost || !food) return;
 
   for (const id in snakes) {
     const s = snakes[id];
     if (inputs[id]) s.direction = inputs[id];
     s.update();
-  }
 
-  for (const id in snakes) {
-    const s = snakes[id];
     if (
       s.head.x === food.position.x &&
       s.head.y === food.position.y
@@ -238,16 +245,16 @@ function updateGame() {
     }
   }
 
-  scoreboard.render(myId);
-
   api.transmit({
+    type: "state",
     snakes: Object.fromEntries(
       Object.entries(snakes).map(([id, s]) => [
         id,
         { body: s.body, direction: s.direction }
       ])
     ),
-    food: food.position
+    food: food.position,
+    scores: scoreboard.scores
   });
 }
 
@@ -256,16 +263,18 @@ function updateGame() {
 ================================ */
 function renderGame() {
   drawGrid();
+
   if (food) food.draw(ctx);
+
   for (const id in snakes) {
-    drawSnakeColored(snakes[id], id);
+    drawSnakeWithColor(snakes[id], id);
   }
 }
 
 /* ===============================
-   COLORED SNAKE (utan ändring av snake.js)
+   DRAW SNAKE WITH COLOR
 ================================ */
-function drawSnakeColored(snake, id) {
+function drawSnakeWithColor(snake, id) {
   ctx.save();
   const hue = scoreboard._hueFromId(id);
   ctx.filter = `hue-rotate(${hue}deg)`;
@@ -279,8 +288,7 @@ function drawSnakeColored(snake, id) {
 function drawGrid() {
   for (let x = 0; x < canvas.width / CELL; x++) {
     for (let y = 0; y < canvas.height / CELL; y++) {
-      ctx.fillStyle =
-        (x + y) % 2 === 0 ? "#141a21" : "#10151b";
+      ctx.fillStyle = (x + y) % 2 === 0 ? "#141a21" : "#10151b";
       ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
     }
   }
@@ -290,20 +298,25 @@ function drawGrid() {
    INPUT (CLIENT)
 ================================ */
 document.addEventListener("keydown", (e) => {
-  if (!isMultiplayer || isHost || !gameStarted) return;
+  if (!isMultiplayer || isHost) return;
 
   const dir =
-    e.key === "ArrowUp" ? "up" :
-    e.key === "ArrowDown" ? "down" :
-    e.key === "ArrowLeft" ? "left" :
-    e.key === "ArrowRight" ? "right" :
+    e.key === "ArrowUp" ? { x: 0, y: -1 } :
+    e.key === "ArrowDown" ? { x: 0, y: 1 } :
+    e.key === "ArrowLeft" ? { x: -1, y: 0 } :
+    e.key === "ArrowRight" ? { x: 1, y: 0 } :
     null;
 
   if (dir) api.transmit({ input: dir });
 });
 
 /* ===============================
-   UI HELPERS
+   MOBILE: STOP SCROLL
+================================ */
+canvas.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+
+/* ===============================
+   UI
 ================================ */
 function hideUI() {
   uiOverlay.classList.add("hidden");
@@ -311,85 +324,7 @@ function hideUI() {
   gameOverScreen.classList.add("hidden");
 }
 
-/* ===============================
-   BUTTONS
-================================ */
 startBtn.onclick = startSingleplayer;
 restartBtn.onclick = startSingleplayer;
 hostBtn.onclick = startHost;
 joinBtn.onclick = joinMultiplayer;
-
-
-/* ===============================
-   MOBILE CONTROLS (SWIPE)
-================================ */
-let touchStartX = 0;
-let touchStartY = 0;
-
-canvas.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-}, { passive: true });
-
-canvas.addEventListener("touchend", (e) => {
-  if (!gameStarted) return;
-
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-
-  // ignorera små rörelser
-  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
-
-  let dir = null;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    dir = dx > 0 ? "right" : "left";
-  } else {
-    dir = dy > 0 ? "down" : "up";
-  }
-
-  // SINGLEPLAYER
-  if (!isMultiplayer) {
-    const s = snakes[myId];
-    if (!s) return;
-
-    s.direction =
-      dir === "up" ? { x: 0, y: -1 } :
-      dir === "down" ? { x: 0, y: 1 } :
-      dir === "left" ? { x: -1, y: 0 } :
-      { x: 1, y: 0 };
-  }
-
-  // MULTIPLAYER CLIENT
-  if (isMultiplayer && !isHost) {
-    api.transmit({ input: dir });
-  }
-
-  // MULTIPLAYER HOST (lokal host-spelare)
-  if (isMultiplayer && isHost) {
-    const s = snakes[myId];
-    if (!s) return;
-
-    s.direction =
-      dir === "up" ? { x: 0, y: -1 } :
-      dir === "down" ? { x: 0, y: 1 } :
-      dir === "left" ? { x: -1, y: 0 } :
-      { x: 1, y: 0 };
-  }
-}, { passive: true });
-
-// Stoppa all scroll på canvas
-canvas.addEventListener(
-  "touchmove",
-  (e) => {
-    e.preventDefault();
-  },
-  { passive: false }
-);
-
-// Stoppa dubbel-tap zoom
-canvas.addEventListener("touchstart", (e) => {
-  e.preventDefault();
-}, { passive: false });
