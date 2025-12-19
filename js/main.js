@@ -318,3 +318,64 @@ startBtn.onclick = startSingleplayer;
 restartBtn.onclick = startSingleplayer;
 hostBtn.onclick = startHost;
 joinBtn.onclick = joinMultiplayer;
+
+
+/* ===============================
+   MOBILE CONTROLS (SWIPE)
+================================ */
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, { passive: true });
+
+canvas.addEventListener("touchend", (e) => {
+  if (!gameStarted) return;
+
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+
+  // ignorera små rörelser
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+
+  let dir = null;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    dir = dx > 0 ? "right" : "left";
+  } else {
+    dir = dy > 0 ? "down" : "up";
+  }
+
+  // SINGLEPLAYER
+  if (!isMultiplayer) {
+    const s = snakes[myId];
+    if (!s) return;
+
+    s.direction =
+      dir === "up" ? { x: 0, y: -1 } :
+      dir === "down" ? { x: 0, y: 1 } :
+      dir === "left" ? { x: -1, y: 0 } :
+      { x: 1, y: 0 };
+  }
+
+  // MULTIPLAYER CLIENT
+  if (isMultiplayer && !isHost) {
+    api.transmit({ input: dir });
+  }
+
+  // MULTIPLAYER HOST (lokal host-spelare)
+  if (isMultiplayer && isHost) {
+    const s = snakes[myId];
+    if (!s) return;
+
+    s.direction =
+      dir === "up" ? { x: 0, y: -1 } :
+      dir === "down" ? { x: 0, y: 1 } :
+      dir === "left" ? { x: -1, y: 0 } :
+      { x: 1, y: 0 };
+  }
+}, { passive: true });
