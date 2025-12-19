@@ -379,3 +379,17 @@ canvas.addEventListener("touchend", (e) => {
       { x: 1, y: 0 };
   }
 }, { passive: true });
+
+// Stoppa all scroll på canvas
+canvas.addEventListener(
+  "touchmove",
+  (e) => {
+    e.preventDefault();
+  },
+  { passive: false }
+);
+
+// Stoppa dubbel-tap zoom
+canvas.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+}, { passive: false });
