@@ -60,7 +60,7 @@ export class Snake {
   for (let i = 1; i < this.body.length; i++) {
     const part = this.body[i];
 
-    ctx.fillStyle = i % 2 === 0 ? "#7edc89" : "#6acb78"; 
+    ctx.fillStyle = i % 2 === 0 ? "#418649ff" : "#56a662ff"; 
     ctx.beginPath();
     ctx.roundRect(
       part.x * size,
@@ -73,7 +73,7 @@ export class Snake {
   }
 
   // --- Rita huvudet ---
-  ctx.fillStyle = "#5fc96d";
+  ctx.fillStyle = "#418649ff";
   ctx.beginPath();
   ctx.roundRect(
     head.x * size,

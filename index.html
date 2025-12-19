@@ -1,58 +1,115 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungrig Orm</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <title>Hungrig Orm</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+    rel="stylesheet"
+  />
 </head>
+
 <body>
   <div class="background-blobs"></div>
 
+  <!-- HEADER -->
   <header class="header">
     <h1 class="title">Hungrig Orm</h1>
-    <p class="subtitle"> <img src="./image/apple.svg" alt="Äpple" class="emoji"> Samla äpplen och väx!</p>
+    <p class="subtitle">
+      <img src="./image/apple.svg" alt="Äpple" class="emoji" />
+      Samla äpplen och väx!
+    </p>
   </header>
 
+  <!-- SCORE -->
   <section class="score-card">
     <div>
       <p>POÄNG</p>
       <h2 id="score">0</h2>
     </div>
+
     <div class="divider"></div>
+
     <div>
       <p>BÄST</p>
       <h2 id="bestScore">0</h2>
     </div>
   </section>
 
+  <!-- GAME -->
   <main id="gameContainer">
-    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
 
-   <div id="uiOverlay" class="ui-overlay">
+    <!-- OVERLAY -->
+    <div id="uiOverlay" class="ui-overlay">
+      <!-- START -->
       <div class="ui-box" id="startScreen">
-        <img src="image/snake.svg" alt="orm" class="snake">
+        <img src="image/snake.svg" alt="Orm" class="snake" />
+
         <h2>Redo att spela?</h2>
-        <p>Använd piltangenter eller WASD<br>SPACE för att pausa</p>
-        <button id="startBtn" class="btn green">▶ STARTA</button>
+        <p>
+          Piltangenter / WASD<br />
+          Dra fingret på mobil
+        </p>
+
+        <!-- SINGLEPLAYER -->
+        <button id="startBtn" class="btn green">
+          ▶ Singleplayer
+        </button>
+
+        <!-- MULTIPLAYER -->
+        <div style="margin-top: 12px;">
+          <button id="hostBtn" class="btn">
+            🌐 Host multiplayer
+          </button>
+
+          <input
+            id="joinCodeInput"
+            placeholder="Session code"
+            style="
+              margin-top: 10px;
+              padding: 10px;
+              width: 100%;
+              border-radius: 10px;
+              border: none;
+              text-align: center;
+              font-size: 12px;
+            "
+          />
+
+          <button
+            id="joinBtn"
+            class="btn"
+            style="margin-top: 10px;"
+          >
+            🔗 Join multiplayer
+          </button>
+        </div>
       </div>
 
+      <!-- GAME OVER -->
       <div class="ui-box hidden" id="gameOverScreen">
         <div class="emoji">😵</div>
+
         <h2>Aj då!</h2>
         <p>Poäng: <span id="finalScore"></span></p>
-        <p id="newRecordMsg" class="record hidden">💛 Nytt rekord!</p>
-        <button id="restartBtn" class="btn red">↻ Försök igen</button>
+
+        <p id="newRecordMsg" class="record hidden">
+          💛 Nytt rekord!
+        </p>
+
+        <button id="restartBtn" class="btn red">
+          ↻ Försök igen
+        </button>
       </div>
     </div>
   </main>
 
-  <footer>
-    <div class="footer-pill">👥 Multiplayer kommer snart!</div>
-  </footer>
-
-    <script type="module" src="js/main.js"></script>    
+  <!-- MAIN SCRIPT -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,184 +1,214 @@
-/* MOBILE-FIRST STYLE — FULLT OMSKRIVEN */
+/* === DARK NEON MOBILE-FIRST STYLE (FULL REPLACE) === */
 
+:root {
+  --bg-dark: #0e1116;
+  --bg-darker: #0b0e13;
+
+  --panel-dark: rgba(26, 31, 38, 0.88);
+  --panel-border: rgba(255,255,255,0.06);
+
+  --green-main: #63d2a2;
+  --green-soft: #4fbf90;
+  --green-glow: rgba(99, 210, 162, 0.45);
+
+  --yellow-main: #f2c94c;
+  --yellow-shadow: #c9a93a;
+
+  --red-main: #eb5757;
+
+  --text-main: #e6f0ea;
+  --text-muted: #9aa7a0;
+}
+
+/* --- Global --- */
 body {
   margin: 0;
   padding: 12px;
-  font-family: 'Fredoka One', cursive;
-  background: linear-gradient(#cce6ff, #b8e0c2);
+  font-family: 'Fredoka One', 'Baloo 2', sans-serif;
+  background: radial-gradient(circle at top, #1b2028 0%, var(--bg-dark) 60%);
+  color: var(--text-main);
   text-align: center;
-  overflow-x: hidden;
-}
-
-body {
   overflow: hidden;
 }
 
-
-/* --- Bakgrundsblobs (mobil-anpassade) --- */
+/* --- Soft background blobs --- */
 .background-blobs::before,
 .background-blobs::after {
   content: '';
   position: fixed;
-  background: rgba(255,255,255,0.45);
-  filter: blur(22px);
-  border-radius: 40px;
+  background: rgba(255,255,255,0.15);
+  filter: blur(40px);
+  border-radius: 60px;
   z-index: -1;
 }
 .background-blobs::before {
-  width: 100px;
-  height: 40px;
-  top: 60px;
-  left: 20px;
+  width: 160px;
+  height: 60px;
+  top: 80px;
+  left: 40px;
 }
 .background-blobs::after {
-  width: 80px;
-  height: 30px;
-  top: 110px;
-  right: 20px;
+  width: 120px;
+  height: 50px;
+  top: 140px;
+  right: 40px;
 }
 
 /* --- Header --- */
-.header .logo {
-  width: 65px;
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
 }
 
+.header .logo {
+  width: 70px;
+  margin-bottom: 6px;
+}
 
 .title {
-  font-size: 32px;
-  margin: 5px 0 0 0;
-  font-weight: 700;
-  color: #2fa34e;
-}
-.subtitle {
-  color: #e74c3c;
-  font-size: 14px;
+  font-size: 34px;
+  margin: 0;
+  color: var(--green-main);
+  text-shadow: 0 0 18px var(--green-glow);
 }
 
-/* --- Poängruta (mobil först) --- */
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: -6px;
+}
+
+/* --- Score card --- */
 .score-card {
   margin: 20px auto;
-  background: #ffffffdd;
-  padding: 10px 20px;
+  padding: 14px 28px;
   display: flex;
-  justify-content: space-around;
   align-items: center;
-  width: 100%;
-  max-width: 330px;
+  gap: 36px;
+  width: fit-content;
+
+  background: var(--panel-dark);
   border-radius: 18px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.12);
-  font-weight: bold;
-}
-.score-card p {
-  margin: 0;
-  font-size: 13px;
-  color: #666;
-}
-.score-card h2 {
-  margin: 3px 0 0;
-  font-size: 22px;
-}
-.divider {
-  width: 2px;
-  height: 30px;
-  background: #ddd;
+  border: 1px solid var(--panel-border);
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(99,210,162,0.15);
 }
 
-/* --- Spelcontainer mobil --- */
+.score-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.score-card h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+}
+
+.score-card .green { color: var(--green-main); }
+.score-card .red { color: var(--red-main); }
+
+.divider {
+  width: 2px;
+  height: 32px;
+  background: rgba(255,255,255,0.1);
+}
+
+/* --- Game container (neon frame) --- */
 #gameContainer {
   margin: 0 auto;
-  width: 100%;
+  padding: 14px;
   max-width: 500px;
   position: relative;
+
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    rgba(99,210,162,0.18),
+    rgba(99,210,162,0.03)
+  );
+
+  box-shadow:
+    0 0 45px rgba(99,210,162,0.35),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 
 #gameCanvas {
   width: 100%;
   height: auto;
-  background:
-    linear-gradient(#99d38c 1px, transparent 1px),
-    linear-gradient(90deg, #a8dca0 1px, transparent 1px);
-  background-size: 20px 20px;
-  border-radius: 20px;
-  border: 5px solid #2d8540;
-  box-shadow: 0 6px 0 #1d5f2c;
+  background: #1a1f26;
+  border-radius: 18px;
 }
 
-
-/* --- UI Overlay --- */
+/* --- Overlay (start / game over) --- */
 .ui-overlay {
   position: absolute;
   inset: 0;
-  background: #ffffffd8;
+  background: rgba(10,14,18,0.75);
+  backdrop-filter: blur(6px);
+
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 20px;
 }
-.hidden {
-  display: none;
-}
+
+.hidden { display: none; }
 
 .ui-box {
-  background: white;
-  padding: 22px;
+  background: var(--panel-dark);
+  padding: 34px 28px;
   width: 90%;
-  max-width: 330px;
-  border-radius: 20px;
-  box-shadow: 0 8px 14px rgba(0,0,0,0.12);
-}
-.snake{
-    width: 120px;
-    height: auto;
-    margin-bottom: -30px;
+  max-width: 360px;
+  border-radius: 22px;
+
+  border: 1px solid var(--panel-border);
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(255,255,255,0.05);
 }
 
-/* --- Knappar mobil --- */
+.snake {
+  width: 120px;
+  margin-bottom: -20px;
+}
+
+/* --- Buttons --- */
 .btn {
-  font-size: 18px;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-  color: white;
-  margin-top: 20px;
   width: 100%;
-}
-.green {
-  background: #176f2c;
-}
-.red {
-  background: #d9534f;
+  margin-top: 22px;
+  padding: 14px 24px;
+  border-radius: 16px;
+  border: none;
+
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+
+  background: var(--yellow-main);
+  color: #1a1f26;
+
+  box-shadow:
+    0 6px 0 var(--yellow-shadow),
+    0 0 22px rgba(242,201,76,0.45);
 }
 
-/* --- Footer-pill mobil --- */
-.footer-pill {
-  background: #fff6dd;
-  padding: 10px 20px;
-  width: fit-content;
-  border-radius: 18px;
-  margin: 30px auto;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  font-size: 14px;
+.btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 3px 0 var(--yellow-shadow);
 }
 
-/* --- MEDIA QUERIES för större skärmar --- */
-@media (min-width: 768px) {
-  .title {
-    font-size: 42px;
-  }
-  .subtitle {
-    font-size: 16px;
-  }
-  .score-card {
-    padding: 15px 40px;
-    max-width: 450px;
-  }
-  .score-card h2 {
-    font-size: 28px;
-  }
-  .ui-box {
-    padding: 30px;
-    max-width: 360px;
+/* ===== DESKTOP ONLY ===== */
+@media (min-width: 1024px) {
+  #gameContainer {
+    max-width: 800px;   /* ← SAMMA visuella storlek som tidigare scale */
+    padding: 20px;
   }
 }
+
+
