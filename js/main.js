@@ -33,6 +33,9 @@ const gameOverScreen = document.getElementById("gameOverScreen");
 
 const startBtn = document.getElementById("startBtn");
 const restartBtn = document.getElementById("restartBtn");
+const hostBtn = document.getElementById("hostBtn");
+const joinBtn = document.getElementById("joinBtn");
+const joinCodeInput = document.getElementById("joinCodeInput");
 
 /* ===============================
    SCOREBOARD
@@ -44,7 +47,7 @@ const scoreboard = new Scoreboard(
 /* ===============================
    GAME STATE
 ================================ */
-let snakes = {}; // id -> Snake
+let snakes = {};        // id -> Snake
 let food = null;
 let lastTick = 0;
 
@@ -71,6 +74,106 @@ function startSingleplayer() {
 }
 
 /* ===============================
+   HOST MULTIPLAYER
+================================ */
+async function startHost() {
+  try {
+    isMultiplayer = true;
+    isHost = true;
+
+    const { session, clientId } = await api.host();
+    myId = clientId;
+
+    alert("Session ID: " + session);
+
+    snakes = {};
+    scoreboard.reset();
+
+    snakes[myId] = new Snake(canvas);
+    food = new Food(canvas, snakes[myId]);
+
+    scoreboard.ensurePlayer(myId);
+    scoreboard.render(myId);
+
+    listenMultiplayer();
+
+    hideUI();
+    lastTick = 0;
+    requestAnimationFrame(gameLoop);
+
+  } catch (e) {
+    console.error(e);
+    alert("Kunde inte hosta");
+  }
+}
+
+/* ===============================
+   JOIN MULTIPLAYER
+================================ */
+async function joinMultiplayer() {
+  const code = joinCodeInput.value.trim();
+  if (!code) {
+    alert("Skriv in session-ID");
+    return;
+  }
+
+  try {
+    isMultiplayer = true;
+    isHost = false;
+
+    const { clientId } = await api.join(code);
+    myId = clientId;
+
+    snakes = {};
+    scoreboard.reset();
+
+    snakes[myId] = new Snake(canvas);
+    food = new Food(canvas, snakes[myId]);
+
+    scoreboard.ensurePlayer(myId);
+    scoreboard.render(myId);
+
+    listenMultiplayer();
+
+    hideUI();
+    lastTick = 0;
+    requestAnimationFrame(gameLoop);
+
+  } catch (e) {
+    console.error(e);
+    alert("Kunde inte ansluta");
+  }
+}
+
+/* ===============================
+   MULTIPLAYER LISTENER
+================================ */
+function listenMultiplayer() {
+  api.listen((event, _, clientId, data) => {
+    if (event !== "game") return;
+
+    // Bygg state från host
+    snakes = {};
+
+    for (const id in data.snakes) {
+      const s = new Snake(canvas);
+      s.body = data.snakes[id].body;
+      s.direction = data.snakes[id].direction;
+      snakes[id] = s;
+
+      scoreboard.ensurePlayer(id);
+    }
+
+    if (!food && snakes[myId]) {
+      food = new Food(canvas, snakes[myId]);
+    }
+
+    food.position = data.food;
+    scoreboard.render(myId);
+  });
+}
+
+/* ===============================
    GAME LOOP
 ================================ */
 function gameLoop(ts) {
@@ -92,11 +195,9 @@ function updateGame() {
 
   me.update();
 
-  // Äta mat
-  if (
-    me.head.x === food.position.x &&
-    me.head.y === food.position.y
-  ) {
+  // äta mat
+  if (me.head.x === food.position.x &&
+      me.head.y === food.position.y) {
     me.grow();
     food.respawn(me);
 
@@ -104,7 +205,18 @@ function updateGame() {
     scoreboard.render(myId);
   }
 
-  // (Multiplayer-host skulle skicka state här senare)
+  // HOST skickar state
+  if (isMultiplayer && isHost) {
+    api.transmit({
+      snakes: Object.fromEntries(
+        Object.entries(snakes).map(([id, s]) => [
+          id,
+          { body: s.body, direction: s.direction }
+        ])
+      ),
+      food: food.position
+    });
+  }
 }
 
 /* ===============================
@@ -120,18 +232,11 @@ function renderGame() {
   }
 }
 
-/* ===============================
-   DRAW SNAKE MED FÄRG
-   (utan att ändra snake.js)
-================================ */
 function drawSnakeWithColor(snake, id) {
   ctx.save();
-
   const hue = scoreboard._hueFromId(id);
   ctx.filter = `hue-rotate(${hue}deg)`;
-
   snake.draw(ctx);
-
   ctx.restore();
 }
 
@@ -149,7 +254,7 @@ function drawGrid() {
 }
 
 /* ===============================
-   INPUT (SINGLEPLAYER)
+   INPUT
 ================================ */
 document.addEventListener("keydown", (e) => {
   if (!snakes[myId]) return;
@@ -162,7 +267,12 @@ document.addEventListener("keydown", (e) => {
     null;
 
   if (!dir) return;
+
   snakes[myId].direction = dir;
+
+  if (isMultiplayer && !isHost) {
+    api.transmit({ input: dir });
+  }
 });
 
 /* ===============================
@@ -176,3 +286,5 @@ function hideUI() {
 
 startBtn.onclick = startSingleplayer;
 restartBtn.onclick = startSingleplayer;
+hostBtn.onclick = startHost;
+joinBtn.onclick = joinMultiplayer;
