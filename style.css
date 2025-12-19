@@ -31,13 +31,6 @@ body {
   overflow: hidden;
 }
 
-html, body {
-  overscroll-behavior: none;
-  touch-action: none;
-  height: 100%;
-}
-
-
 /* --- Soft background blobs --- */
 .background-blobs::before,
 .background-blobs::after {
