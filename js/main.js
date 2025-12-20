@@ -83,6 +83,53 @@ document.addEventListener("keydown", (e) => {
 
   if (!dir) return;
   if (singleGame) singleGame.handleInput(dir);
+
+  // ===============================
+// MOBIL KONTROLLER (SWIPE)
+// ===============================
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, { passive: true });
+
+canvas.addEventListener("touchend", (e) => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+
+  const dir =
+    Math.abs(dx) > Math.abs(dy)
+      ? (dx > 0 ? "right" : "left")
+      : (dy > 0 ? "down" : "up");
+
+  // 🔥 SINGLEPLAYER
+  if (singleGame) {
+    singleGame.handleInput(dir);
+  }
+
+  // 🔥 MULTIPLAYER CLIENT
+  if (mpClient) {
+    mpClient.sendInput(dir);
+  }
+
+  // 🔥 MULTIPLAYER HOST (lokal spelare)
+  if (mpHost) {
+    mpHost.handleLocalInput(dir);
+  }
+
+}, { passive: false });
+
+// Stoppa scroll på canvas
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
+
 });
 
 /* ===============================
