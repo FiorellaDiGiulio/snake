@@ -168,6 +168,10 @@ body {
   border-radius: 18px;
 }
 
+#gameCanvas {
+  touch-action: none;
+}
+
 /* --- Overlay (start / game over) --- */
 .ui-overlay {
   position: absolute;

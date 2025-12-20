@@ -300,3 +300,62 @@ startBtn.onclick = startSingleplayer;
 restartBtn.onclick = startSingleplayer;
 hostBtn.onclick = startHost;
 joinBtn.onclick = joinMultiplayer;
+
+
+// ===============================
+// MOBIL KONTROLLER (SWIPE)
+// ===============================
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, { passive: true });
+
+canvas.addEventListener("touchend", (e) => {
+  if (!gameStarted) return;
+
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+
+  let dir =
+    Math.abs(dx) > Math.abs(dy)
+      ? (dx > 0 ? "right" : "left")
+      : (dy > 0 ? "down" : "up");
+
+  const me = snakes[myId];
+  if (!me) return;
+
+  // SINGLEPLAYER
+  if (!isMultiplayer) {
+    me.direction =
+      dir === "up" ? { x: 0, y: -1 } :
+      dir === "down" ? { x: 0, y: 1 } :
+      dir === "left" ? { x: -1, y: 0 } :
+      { x: 1, y: 0 };
+  }
+
+  // MULTIPLAYER HOST
+  else if (isHost) {
+    me.direction =
+      dir === "up" ? { x: 0, y: -1 } :
+      dir === "down" ? { x: 0, y: 1 } :
+      dir === "left" ? { x: -1, y: 0 } :
+      { x: 1, y: 0 };
+  }
+
+  // MULTIPLAYER CLIENT
+  else {
+    api.transmit({ input: dir });
+  }
+}, { passive: false });
+
+// Stoppa scroll endast på canvas
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
