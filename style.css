@@ -168,9 +168,6 @@ body {
   border-radius: 18px;
 }
 
-#gameCanvas {
-  touch-action: none;
-}
 
 /* --- Overlay (start / game over) --- */
 .ui-overlay {
@@ -183,6 +180,8 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+
 
 .hidden { display: none; }
 

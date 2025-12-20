@@ -1,32 +1,20 @@
-import { Snake } from "./snake.js";
-import { Food } from "./food.js";
 import { mpapi } from "./mpapi.js";
 import { Scoreboard } from "./scoreboard.js";
-
-/* ===============================
-   MULTIPLAYER API
-================================ */
-const api = new mpapi("wss://mpapi.se/net", "hungrig-orm");
-
-/* ===============================
-   GLOBAL STATE
-================================ */
-let isMultiplayer = false;
-let isHost = false;
-let myId = null;
-let gameStarted = false;
+import { Renderer } from "./render.js";
+import { SingleplayerGame } from "./singleplayerGame.js";
 
 /* ===============================
    CANVAS
 ================================ */
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+canvas.width = 800;
+canvas.height = 500;
 
-const CELL = 20;
-const TICK_RATE = 120;
-
-canvas.width = CELL * 40;
-canvas.height = CELL * 25;
+/* ===============================
+   CORE
+================================ */
+const scoreboard = new Scoreboard(document.getElementById("scoreboard"));
+const renderer = new Renderer(canvas, scoreboard);
 
 /* ===============================
    UI
@@ -34,249 +22,58 @@ canvas.height = CELL * 25;
 const uiOverlay = document.getElementById("uiOverlay");
 const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
+const finalScoreEl = document.getElementById("finalScore");
 
 const startBtn = document.getElementById("startBtn");
 const restartBtn = document.getElementById("restartBtn");
-const hostBtn = document.getElementById("hostBtn");
-const joinBtn = document.getElementById("joinBtn");
-const joinCodeInput = document.getElementById("joinCodeInput");
 
 /* ===============================
-   SCOREBOARD
+   GAME INSTANCE
 ================================ */
-const scoreboard = new Scoreboard(
-  document.getElementById("scoreboard")
-);
+let singleGame = null;
 
 /* ===============================
-   GAME DATA
+   HELPERS
 ================================ */
-let snakes = {};
-let food = null;
-let inputs = {};
-let lastTick = 0;
+function hideUI() {
+  uiOverlay.classList.add("hidden");
+}
 
-/* ===============================
-   RESET
-================================ */
-function resetState() {
-  isMultiplayer = false;
-  isHost = false;
-  myId = null;
-  gameStarted = false;
-  snakes = {};
-  inputs = {};
-  food = null;
-  lastTick = 0;
-  scoreboard.reset();
+function showGameOver(score) {
+  finalScoreEl.textContent = score;
+  uiOverlay.classList.remove("hidden");
+  startScreen.classList.add("hidden");
+  gameOverScreen.classList.remove("hidden");
 }
 
 /* ===============================
-   HOST
+   SINGLEPLAYER
 ================================ */
-async function startHost() {
-  resetState();
+function startSingleplayer() {
+  if (singleGame) singleGame.stop();
 
-  try {
-    isMultiplayer = true;
-    isHost = true;
+  hideUI();
 
-    const { session, clientId } = await api.host();
-    myId = clientId;
-
-    alert("Session code: " + session + "\nVäntar på spelare...");
-
-    snakes[myId] = new Snake(canvas);
-    food = new Food(canvas, snakes[myId]);
-
-    scoreboard.ensurePlayer(myId);
-    scoreboard.render(myId);
-
-    listenMultiplayer();
-    hideUI();
-  } catch (e) {
-    alert("Kunde inte hosta: " + e);
-  }
-}
-
-/* ===============================
-   JOIN
-================================ */
-async function joinMultiplayer() {
-  resetState();
-
-  const code = joinCodeInput.value.trim();
-  if (!code) return alert("Skriv in sessionkod");
-
-  try {
-    isMultiplayer = true;
-    isHost = false;
-
-    const res = await api.join(code);
-    myId = res.clientId;
-
-    scoreboard.ensurePlayer(myId);
-    scoreboard.render(myId);
-
-    listenMultiplayer();
-    hideUI();
-  } catch (e) {
-    alert("Kunde inte ansluta: " + e);
-  }
-}
-
-/* ===============================
-   MULTIPLAYER LISTENER
-================================ */
-function listenMultiplayer() {
-  api.listen((event, _, clientId, data) => {
-
-    /* ===== HOST: ny spelare ===== */
-    if (isHost && event === "joined") {
-      if (!snakes[clientId]) {
-        snakes[clientId] = new Snake(canvas);
-        scoreboard.ensurePlayer(clientId);
-
-        // 🔥 SKICKA FULL STATE DIREKT
-        api.transmit({
-          type: "state",
-          snakes: serializeSnakes(),
-          food: food.position,
-          scores: scoreboard.scores
-        });
-
-        scoreboard.render(myId);
-
-        // STARTA SPELET när minst 2 spelare
-        if (Object.keys(snakes).length >= 2 && !gameStarted) {
-          gameStarted = true;
-          lastTick = 0;
-          requestAnimationFrame(gameLoop);
-        }
-      }
-    }
-
-    /* ===== HOST: input ===== */
-    if (isHost && event === "game" && data.input) {
-      inputs[clientId] = data.input;
-    }
-
-    /* ===== CLIENT: state ===== */
-    if (!isHost && event === "game" && data.type === "state") {
-      snakes = {};
-
-      Object.entries(data.snakes).forEach(([id, s]) => {
-        const snake = new Snake(canvas);
-        snake.body = s.body;
-        snake.direction = s.direction;
-        snakes[id] = snake;
-        scoreboard.ensurePlayer(id);
-      });
-
-      if (!food && snakes[myId]) {
-        food = new Food(canvas, snakes[myId]);
-      }
-
-      food.position = data.food;
-      scoreboard.scores = data.scores || {};
-      scoreboard.render(myId);
-
-      if (!gameStarted) {
-        gameStarted = true;
-        lastTick = 0;
-        requestAnimationFrame(gameLoop);
-      }
-    }
+  singleGame = new SingleplayerGame({
+    canvas,
+    renderer,
+    scoreboard
   });
+
+  singleGame.start();
 }
 
 /* ===============================
-   GAME LOOP
+   GAME OVER EVENT
 ================================ */
-function gameLoop(ts) {
-  if (!gameStarted) return;
-
-  if (ts - lastTick > TICK_RATE) {
-    updateGame();
-    lastTick = ts;
-  }
-
-  renderGame();
-  requestAnimationFrame(gameLoop);
-}
+document.addEventListener("singleplayer:gameover", (e) => {
+  showGameOver(e.detail.score);
+});
 
 /* ===============================
-   UPDATE (HOST)
-================================ */
-function updateGame() {
-  if (!isHost) return;
-
-  for (const id in snakes) {
-    const s = snakes[id];
-    if (inputs[id]) s.direction = inputs[id];
-    s.update();
-  }
-
-  for (const id in snakes) {
-    const s = snakes[id];
-    if (s.head.x === food.position.x && s.head.y === food.position.y) {
-      s.grow();
-      food.respawn(s);
-      scoreboard.addPoint(id);
-    }
-  }
-
-  api.transmit({
-    type: "state",
-    snakes: serializeSnakes(),
-    food: food.position,
-    scores: scoreboard.scores
-  });
-}
-
-/* ===============================
-   SERIALIZE
-================================ */
-function serializeSnakes() {
-  return Object.fromEntries(
-    Object.entries(snakes).map(([id, s]) => [
-      id,
-      { body: s.body, direction: s.direction }
-    ])
-  );
-}
-
-/* ===============================
-   RENDER
-================================ */
-function renderGame() {
-  drawGrid();
-  if (food) food.draw(ctx);
-  for (const id in snakes) drawSnakeColored(snakes[id], id);
-}
-
-function drawSnakeColored(snake, id) {
-  ctx.save();
-  ctx.filter = `hue-rotate(${scoreboard._hueFromId(id)}deg)`;
-  snake.draw(ctx);
-  ctx.restore();
-}
-
-function drawGrid() {
-  for (let x = 0; x < canvas.width / CELL; x++) {
-    for (let y = 0; y < canvas.height / CELL; y++) {
-      ctx.fillStyle = (x + y) % 2 === 0 ? "#141a21" : "#10151b";
-      ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-    }
-  }
-}
-
-/* ===============================
-   INPUT (CLIENT)
+   INPUT (GLOBAL)
 ================================ */
 document.addEventListener("keydown", (e) => {
-  if (!isMultiplayer || isHost || !gameStarted) return;
-
   const dir =
     e.key === "ArrowUp" ? "up" :
     e.key === "ArrowDown" ? "down" :
@@ -284,78 +81,12 @@ document.addEventListener("keydown", (e) => {
     e.key === "ArrowRight" ? "right" :
     null;
 
-  if (dir) api.transmit({ input: dir });
+  if (!dir) return;
+  if (singleGame) singleGame.handleInput(dir);
 });
 
 /* ===============================
-   UI
+   BUTTONS
 ================================ */
-function hideUI() {
-  uiOverlay.classList.add("hidden");
-  startScreen.classList.add("hidden");
-  gameOverScreen.classList.add("hidden");
-}
-
 startBtn.onclick = startSingleplayer;
 restartBtn.onclick = startSingleplayer;
-hostBtn.onclick = startHost;
-joinBtn.onclick = joinMultiplayer;
-
-
-// ===============================
-// MOBIL KONTROLLER (SWIPE)
-// ===============================
-let touchStartX = 0;
-let touchStartY = 0;
-
-canvas.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-}, { passive: true });
-
-canvas.addEventListener("touchend", (e) => {
-  if (!gameStarted) return;
-
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-
-  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
-
-  let dir =
-    Math.abs(dx) > Math.abs(dy)
-      ? (dx > 0 ? "right" : "left")
-      : (dy > 0 ? "down" : "up");
-
-  const me = snakes[myId];
-  if (!me) return;
-
-  // SINGLEPLAYER
-  if (!isMultiplayer) {
-    me.direction =
-      dir === "up" ? { x: 0, y: -1 } :
-      dir === "down" ? { x: 0, y: 1 } :
-      dir === "left" ? { x: -1, y: 0 } :
-      { x: 1, y: 0 };
-  }
-
-  // MULTIPLAYER HOST
-  else if (isHost) {
-    me.direction =
-      dir === "up" ? { x: 0, y: -1 } :
-      dir === "down" ? { x: 0, y: 1 } :
-      dir === "left" ? { x: -1, y: 0 } :
-      { x: 1, y: 0 };
-  }
-
-  // MULTIPLAYER CLIENT
-  else {
-    api.transmit({ input: dir });
-  }
-}, { passive: false });
-
-// Stoppa scroll endast på canvas
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-}, { passive: false });
