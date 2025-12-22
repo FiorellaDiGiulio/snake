@@ -12,20 +12,64 @@ export class Snake {
     this.dead = false;
 
     document.addEventListener('keydown', e => this.handleInput(e));
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+
+    canvas.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    this.touchStartX = t.clientX;
+    this.touchStartY = t.clientY;
+    }, { passive: false });
+
+canvas.addEventListener("touchend", (e) => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - this.touchStartX;
+  const dy = t.clientY - this.touchStartY;
+
+  const minSwipe = 20;
+  if (Math.abs(dx) < minSwipe && Math.abs(dy) < minSwipe) return;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Höger / vänster
+    if (dx > 0 && this.direction.x !== -1) {
+      this.direction = { x: 1, y: 0 };
+    } else if (dx < 0 && this.direction.x !== 1) {
+      this.direction = { x: -1, y: 0 };
+    }
+  } else {
+    // Upp / ner
+    if (dy > 0 && this.direction.y !== -1) {
+      this.direction = { x: 0, y: 1 };
+    } else if (dy < 0 && this.direction.y !== 1) {
+      this.direction = { x: 0, y: -1 };
+    }
+  }
+
+  e.preventDefault();
+}, { passive: false });
+
   }
 
   get head() {
     return this.body[0];
   }
 
-  handleInput(e) {
-    const key = e.key.toLowerCase();
+ handleInput(e) {
+  const key = e.key.toLowerCase();
 
-    if (key === 'arrowup' || key === 'w') this.direction = { x: 0, y: -1 };
-    if (key === 'arrowdown' || key === 's') this.direction = { x: 0, y: 1 };
-    if (key === 'arrowleft' || key === 'a') this.direction = { x: -1, y: 0 };
-    if (key === 'arrowright' || key === 'd') this.direction = { x: 1, y: 0 };
-  }
+  if ((key === 'arrowup' || key === 'w') && this.direction.y !== 1)
+    this.direction = { x: 0, y: -1 };
+
+  if ((key === 'arrowdown' || key === 's') && this.direction.y !== -1)
+    this.direction = { x: 0, y: 1 };
+
+  if ((key === 'arrowleft' || key === 'a') && this.direction.x !== 1)
+    this.direction = { x: -1, y: 0 };
+
+  if ((key === 'arrowright' || key === 'd') && this.direction.x !== -1)
+    this.direction = { x: 1, y: 0 };
+}
+
 
   update() {
     const newHead = {
